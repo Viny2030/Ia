@@ -1,40 +1,49 @@
-import pandas as pd
-import numpy as np
+# =====================================================================
+# FILENAME: herramientas.py
+# =====================================================================
+import os
+import httpx
 from langchain_core.tools import tool
+
+# Traemos las URLs de tus servicios (con los fallbacks que usás en main.py)
+CONTRATOS_V2_URL = os.getenv("CONTRATOS_V2_API_URL", "https://monitorcontratos-production.up.railway.app")
+IRI_URL = os.getenv("IRI_API_URL", "https://monitor-production-f053.up.railway.app")
+
 @tool
 def extraer_datos_entidad(nombre_entidad: str) -> str:
-"""Busca y extrae registros históricos, contratos y transacciones de una entidad específica
-desde los archivos locales."""
-try:
-# Simulación de lectura de datos optimizada (p. ej., desde Parquet o CSV)
-# En producción: df = pd.read_parquet(f"datos/{nombre_entidad}.parquet")
-# Simulación de estructura de datos encontrada
-datos_simulados = {
-"entidad": nombre_entidad,
-"contratos_totales": 5,
-"monto_acumulado_ars": 150000000,
-"desviacion_precios_promedio": 0.35, # 35% arriba del mercado
-"adjudicaciones_directas": 4
-}
-return f"ÉXITO - Datos consolidados para {nombre_entidad}: {datos_simulados}"
+    """Busca y extrae registros históricos, contratos y desvíos de precios 
+    de una entidad o proveedor específico desde el Monitor de Contratos v2."""
+    try:
+        # Consultamos tu API de contratos v2 en producción
+        with httpx.Client(timeout=10) as client:
+            # Nota: Ajustá el endpoint (/proveedor, /buscar, etc.) según la API de tu contenedor
+            endpoint = f"{CONTRATOS_V2_URL}/buscar?q={nombre_entidad}"
+            response = client.get(endpoint)
+            
+            if response.status_code == 200:
+                datos = response.json()
+                return f"ÉXITO - Datos reales consolidados para {nombre_entidad}: {datos}"
+            else:
+                return f"ALERTA - Endpoint respondió con código {response.status_code} para {nombre_entidad}."
+    except Exception as e:
+        # Fallback controlado si el servicio está caído para que el agente no muera
+        return f"ERROR - No se pudo conectar al Monitor de Contratos v2: {str(e)}"
 
-1
-
-3. Estructura del Grafo de Estados
-grafo.py
-Define la memoria estructural (Estado) y el flujo de control mediante nodos y reglas condicionales rígidas de
-negocio.
-except Exception as e:
-return f"ERROR - No se pudieron extraer los datos debido a un fallo en el sistema:
-{str(e)}"
 @tool
 def verificar_red_vinculos(nombre_entidad: str) -> str:
-"""Analiza relaciones explícitas e implícitas de la entidad con firmas o directores bajo
-sospecha."""
-try:
-# Lógica para cruzar matrices de relaciones directas/indirectas
-conexiones_riesgosas = ["Empresa_Fantasma_S.A.", "Ex_Funcionario_Publico"]
-return f"ANÁLISIS DE VÍNCULOS - La entidad '{nombre_entidad}' posee coincidencias con:
-{conexiones_riesgosas}"
-except Exception as e:
-return f"ERROR - Fallo al procesar la red de vínculos relacionales: {str(e)}"""
+    """Analiza el Índice de Riesgo Institucional (IRI) y busca si la entidad 
+    posee alertas de riesgo financiero, de contratación u operativo."""
+    try:
+        with httpx.Client(timeout=10) as client:
+            # Consultamos tus endpoints analíticos del IRI
+            endpoint = f"{IRI_URL}/iri/top-riesgo"
+            response = client.get(endpoint)
+            
+            if response.status_code == 200:
+                datos_iri = response.json()
+                # Acá el LLM podrá evaluar si el proveedor figura en el top de riesgo
+                return f"ANÁLISIS DE VÍNCULOS E IRI - Reporte de riesgo actual: {datos_iri}"
+            else:
+                return f"ALERTA - No se pudo obtener el top de riesgo del IRI. Código: {response.status_code}"
+    except Exception as e:
+        return f"ERROR - Fallo al procesar la red de vínculos relacionales en el IRI: {str(e)}"

@@ -1,42 +1,48 @@
 # =====================================================================
-# FILENAME: app.py
+# FILENAME: app.py (Versión Asistente de Programación)
 # =====================================================================
 import os
 from dotenv import load_dotenv
 from langgraph.checkpoint.memory import MemorySaver
 from grafo import workflow
 
-# 1. Cargar las variables de entorno
 load_dotenv()
 
-# 2. Compilar el flujo de trabajo con persistencia en memoria
 memoria = MemorySaver()
-app_agente = workflow.compile(checkpointer=memoria)
+asistente_ia = workflow.compile(checkpointer=memoria)
 
-def ejecutar_auditoria_agente(entidad: str):
-    print(f"=== INICIANDO AGENTE DE AUDITORÍA PARA: {entidad} ===\n")
-    
-    # ESTADO INICIAL (Unificado en un solo renglón continuo sin saltos)
-    estado_inicial = {
-        "messages": [("user", f"Realiza una investigación completa de riesgo sobre la entidad: {entidad}")],
-        "entidad_investigada": entidad,
-        "score_riesgo_calculado": 0.0,
-        "alerta_critica": False
-    }
-    
-    config = {"configurable": {"thread_id": f"hilo_{entidad.lower()}"}}
-    
-    for evento in app_agente.stream(estado_inicial, config, stream_mode="values"):
-        if "messages" in evento:
-            ultimo_mensaje = evento["messages"][-1]
-            if hasattr(ultimo_mensaje, "content") and ultimo_mensaje.content:
-                print(f"[Agente]: {ultimo_mensaje.content}\n")
-                
-    estado_final = app_agente.get_state(config).values
-    print("=== RESULTADO FINAL DE CONTROL DE CALIDAD ===")
-    print(f"Score de Riesgo Asignado: {estado_final.get('score_riesgo_calculado')}")
-    print(f"¿Se disparó Alerta Crítica?: {estado_final.get('alerta_critica')}")
+
+def chat_con_asistente():
+    print("=========================================================")
+    print("🤖 BIENVENIDO A TU ASISTENTE AGÉNTICO DE PROGRAMACIÓN 🤖")
+    print("Escribí tu consulta (o 'salir' para terminar el chat)")
+    print("=========================================================\n")
+
+    config = {"configurable": {"thread_id": "sesion_programacion_1"}}
+
+    while True:
+        entrada_usuario = input("👨‍💻 Tu solicitud: ")
+        if entrada_usuario.lower() in ["salir", "exit", "quit"]:
+            print("¡Nos vemos! Éxito en tu código.")
+            break
+
+        estado_inicial = {
+            "messages": [("user", entrada_usuario)]
+        }
+
+        # Ejecutamos el flujo en streaming
+        for evento in asistente_ia.stream(estado_inicial, config, stream_mode="values"):
+            if "messages" in evento:
+                ultimo_mensaje = evento["messages"][-1]
+
+                # CORRECCIÓN: Primero verificamos si es un mensaje de la IA
+                if getattr(ultimo_mensaje, "type", "") == "ai":
+                    # Ahora sí es seguro revisar content y tool_calls de forma aislada
+                    if hasattr(ultimo_mensaje, "content") and ultimo_mensaje.content:
+                        # Si la IA no está llamando herramientas, es su respuesta final en texto
+                        if not hasattr(ultimo_mensaje, "tool_calls") or not ultimo_mensaje.tool_calls:
+                            print(f"\n🤖 [Asistente]: {ultimo_mensaje.content}\n")
+
 
 if __name__ == "__main__":
-    entidad_a_testear = "Empresa_Fantasma_S.A."
-    ejecutar_auditoria_agente(entidad_a_testear)
+    chat_con_asistente()

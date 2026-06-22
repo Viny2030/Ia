@@ -1,6 +1,0 @@
-# Configuración de API (Si usas OpenAI)
-OPENAI_API_KEY=tu_clave_api_aqui
-# Configuración opcional para LangSmith (Monitoreo y depuración del Grafo)
-LANGCHAIN_TRACING_V2=true
-LANGCHAIN_API_KEY=tu_clave_langchain_aqui
-LANGCHAIN_PROJECT=Agente_Auditoria_Riesgo

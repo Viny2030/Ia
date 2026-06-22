@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agente IA — Asistente de Programación</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #7d8590;
+    --green: #3fb950;
+    --blue: #58a6ff;
+    --purple: #bc8cff;
+    --orange: #d29922;
+    --red: #f85149;
+    --yellow: #e3b341;
+    --accent: #238636;
+    --accent-hover: #2ea043;
+    --code-bg: #0d1117;
+    --tool-bg: #1c2128;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .6rem 1.2rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    font-size: .9rem;
+    font-weight: 600;
+  }
+
+  .brand-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .4; }
+  }
+
+  .status-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .7rem;
+    padding: .2rem .6rem;
+    border-radius: 4px;
+    background: #1a2e1a;
+    color: var(--green);
+    border: 1px solid #2d4a2d;
+  }
+
+  .header-tools {
+    display: flex;
+    gap: .4rem;
+    align-items: center;
+  }
+
+  .tool-pill {
+    font-size: .65rem;
+    font-family: 'JetBrains Mono', monospace;
+    padding: .18rem .5rem;
+    border-radius: 3px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  /* ── Layout principal ── */
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .sidebar-title {
+    font-size: .7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-muted);
+    padding: .8rem 1rem .4rem;
+  }
+
+  .session-btn {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .5rem 1rem;
+    font-size: .8rem;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    text-align: left;
+    border-radius: 0;
+    width: 100%;
+    transition: background .1s;
+  }
+  .session-btn:hover { background: var(--surface2); color: var(--text); }
+  .session-btn.active { background: var(--surface2); color: var(--blue); }
+
+  .sidebar-sep {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: .4rem 0;
+  }
+
+  .tool-list {
+    padding: 0 .5rem;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .tool-item {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .35rem .5rem;
+    font-size: .73rem;
+    color: var(--text-muted);
+    border-radius: 4px;
+    margin-bottom: 2px;
+  }
+
+  .tool-ico { font-size: .85rem; }
+
+  /* ── Chat área ── */
+  .chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: .8rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  /* Bienvenida */
+  .welcome {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--text-muted);
+  }
+  .welcome-icon { font-size: 2.5rem; margin-bottom: .6rem; }
+  .welcome h2 { font-size: 1.1rem; color: var(--text); margin-bottom: .4rem; font-weight: 600; }
+  .welcome p { font-size: .82rem; line-height: 1.6; }
+
+  .quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+
+  .quick-btn {
+    font-size: .75rem;
+    padding: .38rem .75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all .15s;
+  }
+  .quick-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* Mensajes */
+  .msg {
+    display: flex;
+    gap: .7rem;
+    max-width: 860px;
+    width: 100%;
+  }
+
+  .msg.user { flex-direction: row-reverse; align-self: flex-end; }
+  .msg.agent { align-self: flex-start; }
+
+  .msg-avatar {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .85rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .msg.user .msg-avatar { background: #1f3a5f; }
+  .msg.agent .msg-avatar { background: #1a2e1a; }
+
+  .msg-bubble {
+    padding: .65rem .9rem;
+    border-radius: 8px;
+    font-size: .85rem;
+    line-height: 1.65;
+    max-width: calc(100% - 40px);
+  }
+
+  .msg.user .msg-bubble {
+    background: #1f3a5f;
+    border: 1px solid #2d5080;
+    color: var(--text);
+  }
+
+  .msg.agent .msg-bubble {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  /* Tool use indicators */
+  .tool-indicator {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .35rem .7rem;
+    border-radius: 6px;
+    font-size: .75rem;
+    font-family: 'JetBrains Mono', monospace;
+    background: #1c1a2e;
+    border: 1px solid #30265a;
+    color: var(--purple);
+    align-self: flex-start;
+    max-width: 100%;
+  }
+
+  .tool-result {
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+    padding: .4rem .7rem;
+    border-radius: 6px;
+    font-size: .73rem;
+    font-family: 'JetBrains Mono', monospace;
+    background: #1a1e1a;
+    border: 1px solid #2d3a2d;
+    color: var(--text-muted);
+    align-self: flex-start;
+    max-width: 100%;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .thinking-indicator {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .4rem .7rem;
+    border-radius: 6px;
+    font-size: .75rem;
+    color: var(--text-muted);
+    align-self: flex-start;
+  }
+
+  .dots span {
+    animation: blink 1.4s infinite;
+    font-size: 1.2rem;
+    line-height: 0;
+  }
+  .dots span:nth-child(2) { animation-delay: .2s; }
+  .dots span:nth-child(3) { animation-delay: .4s; }
+
+  @keyframes blink {
+    0%, 80%, 100% { opacity: 0; }
+    40% { opacity: 1; }
+  }
+
+  /* Código dentro de respuestas */
+  .msg-bubble pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: .7rem;
+    margin: .5rem 0;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .78rem;
+    line-height: 1.5;
+  }
+
+  .msg-bubble code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .82rem;
+    background: var(--code-bg);
+    padding: .1rem .3rem;
+    border-radius: 3px;
+    color: var(--purple);
+  }
+
+  .msg-bubble pre code {
+    background: none;
+    padding: 0;
+    color: var(--text);
+  }
+
+  /* ── Input área ── */
+  .input-area {
+    padding: .8rem 1.2rem 1rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .input-wrap {
+    display: flex;
+    gap: .5rem;
+    align-items: flex-end;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .5rem .5rem .5rem .8rem;
+    transition: border-color .15s;
+  }
+  .input-wrap:focus-within { border-color: var(--blue); }
+
+  #input-msg {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: .85rem;
+    resize: none;
+    max-height: 120px;
+    min-height: 24px;
+    line-height: 1.5;
+    outline: none;
+  }
+
+  #input-msg::placeholder { color: var(--text-muted); }
+
+  .input-actions {
+    display: flex;
+    gap: .3rem;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+
+  .attach-btn {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: color .15s;
+  }
+  .attach-btn:hover { color: var(--text); }
+
+  .send-btn {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    font-size: .9rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+    flex-shrink: 0;
+  }
+  .send-btn:hover { background: var(--accent-hover); }
+  .send-btn:disabled { background: var(--border); cursor: not-allowed; }
+
+  .input-hint {
+    font-size: .68rem;
+    color: var(--text-muted);
+    margin-top: .4rem;
+    text-align: right;
+  }
+
+  /* ── Code editor panel ── */
+  .editor-panel {
+    width: 0;
+    overflow: hidden;
+    transition: width .3s ease;
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .editor-panel.open {
+    width: 420px;
+  }
+
+  .editor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .6rem .8rem;
+    border-bottom: 1px solid var(--border);
+    font-size: .78rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .editor-close {
+    background: none; border: none; color: var(--text-muted);
+    cursor: pointer; font-size: 1rem;
+    display: flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 4px;
+  }
+  .editor-close:hover { background: var(--surface2); color: var(--text); }
+
+  #code-editor {
+    flex: 1;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .8rem;
+    background: var(--code-bg);
+    color: var(--text);
+    border: none;
+    padding: .8rem;
+    resize: none;
+    outline: none;
+    line-height: 1.6;
+  }
+
+  .editor-footer {
+    padding: .5rem .8rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: .4rem;
+    flex-shrink: 0;
+  }
+
+  .editor-btn {
+    font-size: .75rem;
+    padding: .3rem .7rem;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all .15s;
+  }
+  .editor-btn:hover { border-color: var(--blue); color: var(--blue); }
+  .editor-btn.run { background: #1a2e1a; border-color: #2d4a2d; color: var(--green); }
+  .editor-btn.run:hover { background: #233323; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .editor-panel.open { width: 100vw; position: fixed; top: 0; left: 0; z-index: 100; height: 100vh; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="brand">
+    <div class="brand-dot"></div>
+    <span>Agente IA — Asistente de Programación</span>
+    <span class="status-badge" id="conn-status">desconectado</span>
+  </div>
+  <div class="header-tools">
+    <span class="tool-pill">Groq / Llama 3.3 70B</span>
+    <span class="tool-pill">LangGraph</span>
+    <button class="editor-btn" onclick="toggleEditor()" style="font-size:.72rem">
+      &lt;/&gt; Editor
+    </button>
+  </div>
+</header>
+
+<!-- ── Main layout ── -->
+<div class="main">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-title">Sesiones</div>
+    <button class="session-btn active" onclick="nuevaSesion()">
+      <span>+</span> Nueva sesión
+    </button>
+    <hr class="sidebar-sep">
+    <div class="sidebar-title">Herramientas</div>
+    <div class="tool-list">
+      <div class="tool-item"><span class="tool-ico">📄</span> Leer archivo</div>
+      <div class="tool-item"><span class="tool-ico">💾</span> Guardar archivo</div>
+      <div class="tool-item"><span class="tool-ico">▶️</span> Ejecutar Python</div>
+      <div class="tool-item"><span class="tool-ico">🔍</span> Buscar docs</div>
+      <div class="tool-item"><span class="tool-ico">🔬</span> Analizar error</div>
+      <div class="tool-item"><span class="tool-ico">🧪</span> Generar tests</div>
+      <div class="tool-item"><span class="tool-ico">📁</span> Listar archivos</div>
+    </div>
+  </aside>
+
+  <!-- Chat -->
+  <div class="chat-area">
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome">
+        <div class="welcome-icon">🤖</div>
+        <h2>Asistente Agéntico de Programación</h2>
+        <p>Podés pedirme que lea, corrija o genere código, analice errores,<br>
+           ejecute scripts, busque documentación o genere tests unitarios.</p>
+        <div class="quick-actions">
+          <button class="quick-btn" onclick="quickAction('Listá los archivos de este proyecto')">📁 Ver archivos</button>
+          <button class="quick-btn" onclick="quickAction('Explicame cómo funciona el agente')">❓ ¿Cómo funciona?</button>
+          <button class="quick-btn" onclick="quickAction('Ejecutá este código: print([x**2 for x in range(10)])')">▶️ Ejecutar código</button>
+          <button class="quick-btn" onclick="quickAction('Buscá documentación de pandas')">🔍 Buscar docs</button>
+          <button class="quick-btn" onclick="quickAction('Analizá este error: NameError: name \"df\" is not defined')">🔬 Analizar error</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea
+          id="input-msg"
+          placeholder="Preguntá sobre código, pegá un error, pedí que ejecute un script..."
+          rows="1"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+        <div class="input-actions">
+          <button class="attach-btn" onclick="insertCodeBlock()" title="Insertar bloque de código">{ }</button>
+          <button class="send-btn" id="send-btn" onclick="enviarMensaje()" title="Enviar (Enter)">↑</button>
+        </div>
+      </div>
+      <div class="input-hint">Enter para enviar · Shift+Enter para nueva línea · &lt;/&gt; para abrir editor</div>
+    </div>
+  </div>
+
+  <!-- Editor de código -->
+  <div class="editor-panel" id="editor-panel">
+    <div class="editor-header">
+      <span>📝 Editor de código</span>
+      <button class="editor-close" onclick="toggleEditor()">✕</button>
+    </div>
+    <textarea id="code-editor" placeholder="# Escribí tu código aquí...
+# Podés pedirle al agente que lo analice, corrija o ejecute
+
+def ejemplo():
+    return 'Hola desde el editor!'
+"></textarea>
+    <div class="editor-footer">
+      <button class="editor-btn run" onclick="ejecutarDesdeEditor()">▶ Ejecutar</button>
+      <button class="editor-btn" onclick="analizarDesdeEditor()">🔬 Analizar</button>
+      <button class="editor-btn" onclick="testsDesdeEditor()">🧪 Tests</button>
+      <button class="editor-btn" onclick="copiarEditor()">📋 Copiar</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── WebSocket ──────────────────────────────────────────────────────
+let ws = null;
+let sessionId = 'sesion_' + Math.random().toString(36).slice(2, 9);
+let procesando = false;
+let thinkingEl = null;
+
+function conectar() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws/${sessionId}`);
+
+  ws.onopen = () => {
+    document.getElementById('conn-status').textContent = 'conectado';
+    document.getElementById('conn-status').style.color = '#3fb950';
+    document.getElementById('send-btn').disabled = false;
+  };
+
+  ws.onclose = () => {
+    document.getElementById('conn-status').textContent = 'desconectado';
+    document.getElementById('conn-status').style.color = '#f85149';
+    document.getElementById('send-btn').disabled = true;
+    setTimeout(conectar, 2000);
+  };
+
+  ws.onerror = () => {
+    document.getElementById('conn-status').textContent = 'error';
+  };
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    manejarMensaje(data);
+  };
+}
+
+function manejarMensaje(data) {
+  const cont = document.getElementById('messages');
+
+  // Remover thinking indicator
+  if (thinkingEl && data.tipo !== 'thinking') {
+    thinkingEl.remove();
+    thinkingEl = null;
+  }
+
+  switch (data.tipo) {
+    case 'thinking':
+      if (!thinkingEl) {
+        thinkingEl = document.createElement('div');
+        thinkingEl.className = 'thinking-indicator';
+        thinkingEl.innerHTML = `<span>🤖</span> <span>${data.contenido}</span> <span class="dots"><span>.</span><span>.</span><span>.</span></span>`;
+        cont.appendChild(thinkingEl);
+      }
+      break;
+
+    case 'tool_use':
+      const toolEl = document.createElement('div');
+      toolEl.className = 'tool-indicator';
+      toolEl.textContent = data.contenido;
+      cont.appendChild(toolEl);
+      break;
+
+    case 'tool_result':
+      const resEl = document.createElement('div');
+      resEl.className = 'tool-result';
+      resEl.textContent = data.contenido;
+      cont.appendChild(resEl);
+      break;
+
+    case 'respuesta':
+      const msgEl = document.createElement('div');
+      msgEl.className = 'msg agent';
+      msgEl.innerHTML = `
+        <div class="msg-avatar">🤖</div>
+        <div class="msg-bubble">${formatearRespuesta(data.contenido)}</div>
+      `;
+      cont.appendChild(msgEl);
+      break;
+
+    case 'error':
+      const errEl = document.createElement('div');
+      errEl.className = 'msg agent';
+      errEl.innerHTML = `
+        <div class="msg-avatar">⚠️</div>
+        <div class="msg-bubble" style="border-color:#f8514940;background:#2d1a1a;color:#f85149">${escapeHtml(data.contenido)}</div>
+      `;
+      cont.appendChild(errEl);
+      break;
+
+    case 'fin':
+      procesando = false;
+      document.getElementById('send-btn').disabled = false;
+      break;
+  }
+
+  cont.scrollTop = cont.scrollHeight;
+}
+
+// ── Enviar mensaje ─────────────────────────────────────────────────
+function enviarMensaje() {
+  if (procesando || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+  const input = document.getElementById('input-msg');
+  const texto = input.value.trim();
+  if (!texto) return;
+
+  // Ocultar bienvenida
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+
+  // Mostrar mensaje del usuario
+  const cont = document.getElementById('messages');
+  const userEl = document.createElement('div');
+  userEl.className = 'msg user';
+  userEl.innerHTML = `
+    <div class="msg-avatar">👨‍💻</div>
+    <div class="msg-bubble">${escapeHtml(texto).replace(/\n/g, '<br>')}</div>
+  `;
+  cont.appendChild(userEl);
+  cont.scrollTop = cont.scrollHeight;
+
+  // Enviar al servidor
+  procesando = true;
+  document.getElementById('send-btn').disabled = true;
+  ws.send(JSON.stringify({ mensaje: texto }));
+
+  // Limpiar input
+  input.value = '';
+  input.style.height = 'auto';
+}
+
+// ── Formatear respuesta con markdown básico ────────────────────────
+function formatearRespuesta(texto) {
+  return texto
+    // Bloques de código
+    .replace(/```(\w+)?\n?([\s\S]*?)```/g, (_, lang, code) =>
+      `<pre><code>${escapeHtml(code.trim())}</code></pre>`)
+    // Código inline
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    // Negrita
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // Cursiva
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // Saltos de línea
+    .replace(/\n/g, '<br>');
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ── Controles ──────────────────────────────────────────────────────
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    enviarMensaje();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function quickAction(texto) {
+  document.getElementById('input-msg').value = texto;
+  enviarMensaje();
+}
+
+function insertCodeBlock() {
+  const input = document.getElementById('input-msg');
+  const pos = input.selectionStart;
+  const val = input.value;
+  input.value = val.slice(0, pos) + '\n```python\n\n```' + val.slice(pos);
+  input.focus();
+  autoResize(input);
+}
+
+function nuevaSesion() {
+  sessionId = 'sesion_' + Math.random().toString(36).slice(2, 9);
+  document.getElementById('messages').innerHTML = `
+    <div class="welcome" id="welcome">
+      <div class="welcome-icon">🤖</div>
+      <h2>Nueva sesión iniciada</h2>
+      <p>El historial fue limpiado. ¿En qué te ayudo?</p>
+    </div>`;
+  if (ws) ws.close();
+  conectar();
+}
+
+// ── Editor ─────────────────────────────────────────────────────────
+function toggleEditor() {
+  document.getElementById('editor-panel').classList.toggle('open');
+}
+
+function ejecutarDesdeEditor() {
+  const codigo = document.getElementById('code-editor').value.trim();
+  if (!codigo) return;
+  document.getElementById('input-msg').value =
+    `Ejecutá este código Python:\n\`\`\`python\n${codigo}\n\`\`\``;
+  enviarMensaje();
+}
+
+function analizarDesdeEditor() {
+  const codigo = document.getElementById('code-editor').value.trim();
+  if (!codigo) return;
+  document.getElementById('input-msg').value =
+    `Analizá este código, identificá problemas y sugerí mejoras:\n\`\`\`python\n${codigo}\n\`\`\``;
+  enviarMensaje();
+}
+
+function testsDesdeEditor() {
+  const codigo = document.getElementById('code-editor').value.trim();
+  if (!codigo) return;
+  // Guardar en archivo temporal y pedir tests
+  document.getElementById('input-msg').value =
+    `Generá tests unitarios con pytest para este código:\n\`\`\`python\n${codigo}\n\`\`\``;
+  enviarMensaje();
+}
+
+function copiarEditor() {
+  navigator.clipboard.writeText(document.getElementById('code-editor').value)
+    .then(() => {
+      const btn = event.target;
+      btn.textContent = '✅ Copiado';
+      setTimeout(() => btn.textContent = '📋 Copiar', 1500);
+    });
+}
+
+// ── Init ───────────────────────────────────────────────────────────
+conectar();
+</script>
+</body>
+</html>
